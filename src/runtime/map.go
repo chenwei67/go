@@ -576,7 +576,7 @@ func mapaccess2_fat(t *maptype, h *hmap, key, zero unsafe.Pointer) (unsafe.Point
 }
 
 // Like mapaccess, but allocates a slot for the key if it is not present in the map.
-func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer {
+func mapassign(t *maptype, h *hmap, key unsafe.Pointer) unsafe.Pointer { // 返回的是hmap中value应该写入的地址
 	if h == nil {
 		panic(plainError("assignment to entry in nil map"))
 	}
@@ -639,13 +639,13 @@ bucketloop:
 			}
 			// already have a mapping for key. Update it.
 			if t.NeedKeyUpdate() {
-				typedmemmove(t.Key, k, key)
+				typedmemmove(t.Key, k, key) // 将key移动到k的内存上
 			}
 			elem = add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.KeySize)+i*uintptr(t.ValueSize))
 			goto done
 		}
 		ovf := b.overflow(t)
-		if ovf == nil {
+		if ovf == nil { // 获取到了原来已创建的溢出桶bmap
 			break
 		}
 		b = ovf
@@ -655,14 +655,14 @@ bucketloop:
 
 	// If we hit the max load factor or we have too many overflow buckets,
 	// and we're not already in the middle of growing, start growing.
-	if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) {
+	if !h.growing() && (overLoadFactor(h.count+1, h.B) || tooManyOverflowBuckets(h.noverflow, h.B)) { // 扩容
 		hashGrow(t, h)
 		goto again // Growing the table invalidates everything, so try again
 	}
 
 	if inserti == nil {
 		// The current bucket and all the overflow buckets connected to it are full, allocate a new one.
-		newb := h.newoverflow(t, b)
+		newb := h.newoverflow(t, b) // 申请溢出桶，未进入扩容阶段
 		inserti = &newb.tophash[0]
 		insertk = add(unsafe.Pointer(newb), dataOffset)
 		elem = add(insertk, bucketCnt*uintptr(t.KeySize))
